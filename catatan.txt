@@ -1,0 +1,68 @@
+                                    print("DM will be posted with media")
+                                    leftcheck = 260
+                                    left = 0
+                                    right = 280
+                                    check = message[leftcheck:right].split(' ')
+                                    separator = len(check[-1]) ## kasih separator biar diakhir tweet engga ada kata terpenggal, kalo terpenggal di masukin ke next tweet.
+                                    message1 = message[left:right-separator] # + '(cont..)'
+                        
+                                    ## API RELOAD ##
+                                    auth = tweepy.OAuthHandler(constants.CONSUMER_KEY, constants.CONSUMER_SCRET)
+                                    auth.set_access_token(constants.ACCESS_KEY, constants.ACCESS_SECRET)
+                                    api = tweepy.API(auth)
+                                    ## API RELOAD ##
+
+                                    if complete == 0:
+                                        print(dms[i]['shorted_media_url'])
+                                        print("shorted url" + dms[i]['shorted_media_url'])
+                                        print("Downloading media...")
+                                        arr = str(dms[i]['media']).split('/')
+                                        print(arr[len(arr)-1])
+                                        if type == 'video':
+                                            arr = arr[len(arr)-1].split("?tag=1")
+                                            arr = arr[0]
+                                        elif type == 'photo':
+                                            arr = arr[len(arr)-1]
+
+                                        auth = OAuth1(client_key= constants.CONSUMER_KEY,
+                                                    client_secret= constants.CONSUMER_SCRET,
+                                                    resource_owner_secret= constants.ACCESS_SECRET,
+                                                    resource_owner_key= constants.ACCESS_KEY)
+
+                                        r = requests.get(dms[i]['media'], auth = auth)
+
+                                        with open(str(arr), 'wb') as f:
+                                            f.write(r.content)
+
+                                        print("Media downloaded successfully!")
+                                        if dms[i]['shorted_media_url'] in message1:
+                                            print("shorted url" + str(dms[i]['shorted_media_url']))
+                                            message1 = message1.replace(dms[i]['shorted_media_url'], '')
+                                        else:
+                                            print("No url in tweet")
+
+                                        if type == 'video' :
+                                            videoTweet = VideoTweet(arr)
+                                            videoTweet.upload_init()
+                                            videoTweet.upload_append()
+                                            videoTweet.upload_finalize()
+                                            videoTweet.message1(message1)
+                                        elif type == 'photo' :
+                                            sendtwt = api.update_with_media(arr, None)
+                                            sendtwt2 = api.update_status(message1, in_reply_to_status_id = sendtwt.id, auto_populate_reply_metadata = True)
+                                            time.sleep(10)
+                                            print('build the first one...')
+                        
+                                            posted += 1
+                                            complete = sendtwt2.id
+                                            postid = complete
+                                            rttime = sendtwt2.created_at.replace(tzinfo=timezone.utc)
+                                            os.remove(str(arr))
+                                            print('Build first post with media success..')
+                        
+                                    else: 
+                                        complete = api.update_status(message1, in_reply_to_status_id = complete, auto_populate_reply_metadata = True).id
+                                        time.sleep(10)
+                                        message = message[right-separator:len(message)]
+                                        print('still doing till finish...')                                   
+                    
